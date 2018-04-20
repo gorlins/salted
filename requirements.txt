@@ -1,0 +1,2 @@
+luigi==2.7.*
+pandas
