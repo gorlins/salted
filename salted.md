@@ -56,4 +56,4 @@ Simply writing the data version into a filename – or key for a key value store
 ### Tying it Together – A Working Example
 An example solution which implements a generic function, `get_salted_version`, for a Luigi task, is shown below.  Some example workable tasks are included – they just need some fake data to read!  Create a few tsv files in `data/stream/YYYY-MM-DD.tsv` with a column named ‘artist’ and run the code via luigi.
 
-See: [](salted_demo.py)
+See: [salted_demo.py](salted_demo.py)

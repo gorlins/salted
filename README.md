@@ -2,7 +2,7 @@
 
 A demo implementation of a "Salted Graph" workflow.
 
-Please read [salted.md]() for a writeup
+Please read [salted.md](salted.md) for a writeup
 
 To run the code here:
 
