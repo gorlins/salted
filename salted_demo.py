@@ -1,10 +1,14 @@
 from datetime import date
 from hashlib import sha256
 
-from luigi import DateIntervalParameter, DateParameter, LocalTarget, Task, build
+from luigi import DateIntervalParameter, DateParameter, FloatParameter, \
+    LocalTarget, Parameter, Task, build, format
 from luigi.date_interval import Week
 from luigi.task import flatten
 import pandas as pd
+from sklearn.datasets import load_digits
+from sklearn.externals import joblib
+from sklearn.svm import SVC
 
 
 def get_salted_version(task):
@@ -100,7 +104,58 @@ class AggregateArtists(Task):
             together.to_csv(out_file, sep='\t')
 
 
+class SVCTask(Task):
+
+    __version__ = '1.0'
+
+    c = FloatParameter(default=100.)
+    gamma = FloatParameter(default=1.)
+    kernel = Parameter(default='rbf')
+
+
+class TrainDigits(SVCTask):
+
+    def output(self):
+        return salted_target(self, 'data/model-{salt}.pkl', format=format.Nop)
+
+    def run(self):
+        # http://scikit-learn.org/stable/tutorial/basic/tutorial.html
+        digits = load_digits()
+
+        svc = SVC(C=self.c, gamma=self.gamma, kernel=self.kernel)
+
+        svc.fit(digits.data[::2], digits.target[::2])
+
+        with self.output().open('w') as f:
+            joblib.dump(svc, f, protocol=-1)
+
+
+class PredictDigits(SVCTask):
+
+    def requires(self):
+        return self.clone(TrainDigits)
+
+    def output(self):
+        return salted_target(self, 'data/accuracy-{salt}.txt')
+
+    def run(self):
+
+        with self.input().open() as f:
+            svc = joblib.load(f)
+
+        digits = load_digits()
+        predictions = svc.predict(digits.data[1::2])
+        with self.output().open('w') as f:
+            f.write('Accuracy: {}'.format(
+                (predictions == digits.target[1::2]).mean()
+            ))
+
+
 if __name__ == '__main__':
     agg = AggregateArtists(date_interval=Week.from_date(date(2018, 3, 7)))
 
-    build([agg], local_scheduler=True)
+    # Choose some tasks/params to run, tweak versions, etc
+    build([
+        agg,
+        PredictDigits(),
+    ], local_scheduler=True)
