@@ -35,8 +35,9 @@ def get_salted_version(task):
             # Depending on strictness - skipping params is acceptable if
             # output already is partitioned by their params; including every
             # param may make hash *too* sensitive
-            '{}={}'.format(param, value)
-            for param, value in task.param_kwargs.items()
+            '{}={}'.format(param_name, repr(task.param_kwargs[param_name]))
+            for param_name, param in sorted(task.get_params())
+            if param.significant
         ]
     )
     return sha256(msg.encode()).hexdigest()
