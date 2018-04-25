@@ -43,8 +43,20 @@ def get_salted_version(task):
     return sha256(msg.encode()).hexdigest()
 
 
+def salted_target(task, file_pattern, format=None, **kwargs):
+    """A local target with a file path formed with a 'salt' kwarg
+
+    :rtype: LocalTarget
+    """
+    return LocalTarget(file_pattern.format(
+        salt=get_salted_version(task)[:6], self=task, **kwargs
+    ), format=format)
+
+
 class Streams(Task):
+
     date = DateParameter()
+    
     __version__ = '1.0'
 
     def run(self):
@@ -69,11 +81,8 @@ class AggregateArtists(Task):
     __version__ = '1.2 - bugfix'
 
     def output(self):
-        return LocalTarget(
-            "data/artist_streams_{}-{}.tsv".format(
-                self.date_interval,
-                get_salted_version(self)[:8]
-            ))
+        return salted_target(
+            self, "data/artist_streams_{self.date_interval}-{salt}.tsv")
 
     def requires(self):
         return [Streams(date=date) for date in self.date_interval]
